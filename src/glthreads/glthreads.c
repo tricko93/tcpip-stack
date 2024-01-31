@@ -2,16 +2,29 @@
  * @file:        glthreads.c
  * @author:      Marko Trickovic (contact@markotrickovic.com)
  * @website:     www.markotrickovic.com
- * @date:        28/01/2024 02:30 PM
+ * @date:        31/01/2024 05:30 PM
  * @license:     MIT
  * @language:    C
  * @platform:    x86_64
- * @description: This file contains the functions that are invoked to do the
- *               initialization of glthread, adding new node to glthread at
- *               the first position, adding new node at the last position.
- **
+ * @description: This file contains functions for initializing and manipulating
+ *               a generic linked list (glthread). The latest revision (0.2)
+ *               introduces the glthread_remove function, enabling the removal
+ *               of a specified node from the Linked List.
+ *
+ *               Functions in this file:
+ *                 - glthread_add_next
+ *                 - glthread_add
+ *                 - init_glthread
+ *                 - glthread_remove
+ *
+* @note:         This code is part of the tcpip-stack project, a course on
+ *               network development.
+ *
  * Revision 0.1: 28/01/2024 Marko Trickovic
  * Initial version that initializes glthread, adds node to the glthread.
+ *
+ * Revision 0.2: 31/01/2024 Marko Trickovic
+ * Added glthread_remove function for removing a node from the Linked List.
  *****************************************************************************/
 
 #ifndef GLTHREADS_C
@@ -22,10 +35,10 @@
 #include <stdio.h>
 
 /**
- * @brief      Private function to add a new_node right after curr_node.
+ * @brief      Adds a new node next to the current node.
  *
- * @param      curr_node  The curr node
- * @param      new_node   The new node
+ * @param      curr_node  Current node in the linked list.
+ * @param      new_node   New node to be added next to the current node.
  */
 void glthread_add_next(glthread_node_t *curr_node, glthread_node_t *new_node)
 {
@@ -46,10 +59,10 @@ void glthread_add_next(glthread_node_t *curr_node, glthread_node_t *new_node)
 }
 
 /**
- * @brief      Function to insert into a glthread at the first position.
+ * @brief      Adds a node at the head of the Linked List.
  *
- * @param      lst     The list
- * @param      new_node  The new node
+ * @param      lst       Pointer to the Linked List.
+ * @param      new_node  New node to be added at the head of the Linked List.
  */
 void glthread_add(glthread_t *lst, glthread_node_t *new_node)
 {
@@ -67,10 +80,48 @@ void glthread_add(glthread_t *lst, glthread_node_t *new_node)
 }
 
 /**
- * @brief      Initializes the glthread.
+ * @brief      Removes a node from the Linked List.
  *
- * @param      lst     The list
- * @param[in]  offset  The offset
+ * @param      lst             Pointer to the Linked List.
+ * @param      node_to_delete  Node to be deleted.
+ */
+void glthread_remove(glthread_t *lst, glthread_node_t *node_to_delete) {
+    glthread_node_t *tmp = NULL;
+    glthread_node_t *prev = NULL;
+    void *element_ptr = NULL;
+
+    ITERATE_GL_THREADS_BEGIN(lst, void, element_ptr)
+    {
+        tmp = (glthread_node_t *)((char *)element_ptr + lst->offset);
+
+        if (tmp == node_to_delete) {
+            // Found the node, remove it from the linked list
+            if (prev != NULL) {
+                // If the node is not the head of the list, update the previous node's 'right' pointer
+                prev->right = tmp->right;
+            } else {
+                // If the node is the head of the list, update the list's 'head' pointer
+                lst->head = tmp->right;
+                if (lst->head != NULL) {
+                    // If the list is not empty, update the left pointer of the new head
+                    lst->head->left = NULL;
+                }
+            }
+
+            break;
+        }
+
+        // Update 'prev' to keep track of the previous node
+        prev = tmp;
+    }
+    ITERATE_GL_THREADS_ENDS;
+}
+
+/**
+ * @brief      Initializes head pointer and offset value.
+ *
+ * @param      lst     Pointer to the Linked List.
+ * @param[in]  offset  New node to be added next to the current node.
  */
 void init_glthread(glthread_t *lst, unsigned int offset)
 {
